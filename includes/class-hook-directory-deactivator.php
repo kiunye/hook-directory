@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 /**
  * Fired during plugin deactivation
@@ -29,7 +30,7 @@ class Hook_Directory_Deactivator {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function deactivate() {
+    public static function deactivate(): void {
 
 	}
 
