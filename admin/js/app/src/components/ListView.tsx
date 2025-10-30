@@ -68,6 +68,8 @@ export const ListView: React.FC = () => {
   const total = data?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / (data?.perPage || perPage)));
 
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+
   return (
     <div>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
@@ -97,6 +99,7 @@ export const ListView: React.FC = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
+              <th style={{ textAlign: 'left', borderBottom: '1px solid #eee', padding: 8, width: 40 }}></th>
               <th style={{ textAlign: 'left', borderBottom: '1px solid #eee', padding: 8 }}>Hook</th>
               <th style={{ textAlign: 'left', borderBottom: '1px solid #eee', padding: 8 }}>Type</th>
               <th style={{ textAlign: 'left', borderBottom: '1px solid #eee', padding: 8 }}>Source</th>
@@ -104,14 +107,51 @@ export const ListView: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {(data?.items ?? []).map((row, idx) => (
-              <tr key={row.hook_name + '-' + idx}>
-                <td style={{ padding: 8, borderBottom: '1px solid #f2f2f2' }}>{row.hook_name}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #f2f2f2' }}>{row.hook_type}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #f2f2f2' }}>{[row.source_type, row.source_name].filter(Boolean).join(': ')}</td>
-                <td style={{ padding: 8, borderBottom: '1px solid #f2f2f2', color: '#555' }}>{row.file_path ?? ''}</td>
-              </tr>
-            ))}
+            {(data?.items ?? []).map((row, idx) => {
+              const key = row.hook_name + '-' + idx;
+              const isOpen = !!open[key];
+              const toggle = () => setOpen((s) => ({ ...s, [key]: !isOpen }));
+              const src = [row.source_type, row.source_name].filter(Boolean).join(': ');
+              return (
+                <React.Fragment key={key}>
+                  <tr>
+                    <td style={{ padding: 8, borderBottom: '1px solid #f2f2f2' }}>
+                      <button onClick={toggle} aria-label="Expand" style={{ border: 0, background: 'transparent', cursor: 'pointer' }}>
+                        {isOpen ? '▾' : '▸'}
+                      </button>
+                    </td>
+                    <td style={{ padding: 8, borderBottom: '1px solid #f2f2f2' }}>{row.hook_name}</td>
+                    <td style={{ padding: 8, borderBottom: '1px solid #f2f2f2' }}>{row.hook_type}</td>
+                    <td style={{ padding: 8, borderBottom: '1px solid #f2f2f2' }}>{src}</td>
+                    <td style={{ padding: 8, borderBottom: '1px solid #f2f2f2', color: '#555' }}>{row.file_path ?? ''}</td>
+                  </tr>
+                  {isOpen && (
+                    <tr>
+                      <td colSpan={5} style={{ padding: 12, background: '#fafafa', borderBottom: '1px solid #f0f0f0' }}>
+                        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                          <div>
+                            <strong>Hook:</strong>
+                            <div style={{ fontFamily: 'monospace' }}>{row.hook_name}</div>
+                          </div>
+                          <div>
+                            <strong>Type:</strong>
+                            <div>{row.hook_type}</div>
+                          </div>
+                          <div>
+                            <strong>Source:</strong>
+                            <div>{src || '—'}</div>
+                          </div>
+                          <div>
+                            <strong>File:</strong>
+                            <div style={{ color: '#555' }}>{row.file_path || '—'}</div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
             {(!data || (data.items ?? []).length === 0) && !loading && (
               <tr>
                 <td colSpan={4} style={{ padding: 16, color: '#777' }}>No hooks found.</td>
