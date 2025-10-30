@@ -168,29 +168,8 @@ class Hook_Directory_Discovery_Static {
 	 * Persist results: replace existing static entries.
 	 */
 	private function write_results( array $entries ): int {
-		global $wpdb;
-		$table = $wpdb->prefix . 'hook_explorer_cache';
-		// Clear previous static detections
-		$wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE detection_method = %s", 'static' ) );
-		$count = 0;
-		foreach ( $entries as $e ) {
-			$wpdb->insert(
-				$table,
-				array(
-					'hook_name'        => $e['hook_name'],
-					'hook_type'        => $e['hook_type'],
-					'file_path'        => $e['file_path'],
-					'line'             => $e['line'],
-					'source_type'      => $e['source_type'],
-					'source_name'      => $e['source_name'],
-					'detection_method' => 'static',
-					'first_seen'       => current_time( 'mysql', true ),
-					'last_seen'        => current_time( 'mysql', true ),
-				),
-				array( '%s','%s','%s','%d','%s','%s','%s','%s','%s' )
-			);
-			$count++;
-		}
+		$cache = new Hook_Directory_Cache();
+		$count = $cache->replace_static_entries( $entries );
 		update_option( 'hook_explorer_last_scan', time() );
 		return $count;
 	}

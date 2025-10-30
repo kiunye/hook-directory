@@ -138,6 +138,11 @@ class Hook_Directory {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-hook-directory-discovery-runtime.php';
 
+		/**
+		 * Cache/background processing.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-hook-directory-cache.php';
+
 		$this->loader = new Hook_Directory_Loader();
 
 	}
@@ -212,6 +217,12 @@ class Hook_Directory {
 		add_action( 'plugins_loaded', function () {
 			$runtime = new Hook_Directory_Discovery_Runtime();
 			$runtime->start();
+		} );
+
+		// Cron worker to process background queue.
+		add_action( Hook_Directory_Cache::CRON_HOOK, function () {
+			$cache = new Hook_Directory_Cache();
+			$cache->process_queue_chunk();
 		} );
 	}
 
