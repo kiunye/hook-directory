@@ -143,6 +143,11 @@ class Hook_Directory {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-hook-directory-cache.php';
 
+		/**
+		 * REST API controller.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-hook-directory-rest.php';
+
 		$this->loader = new Hook_Directory_Loader();
 
 	}
@@ -223,6 +228,12 @@ class Hook_Directory {
 		add_action( Hook_Directory_Cache::CRON_HOOK, function () {
 			$cache = new Hook_Directory_Cache();
 			$cache->process_queue_chunk();
+		} );
+
+		// Register REST routes
+		add_action( 'rest_api_init', function () {
+			$rest = new Hook_Directory_REST();
+			$rest->register_routes();
 		} );
 	}
 
