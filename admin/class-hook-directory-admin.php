@@ -63,7 +63,7 @@ class Hook_Directory_Admin {
 	public function enqueue_styles() {
 
 		// Attempt to enqueue Vite-built CSS if manifest exists
-		$asset = $this->resolve_manifest_asset( 'admin.js' );
+		$asset = $this->resolve_manifest_asset( 'admin' );
 		if ( $asset && ! empty( $asset['css'] ) && is_array( $asset['css'] ) ) {
 			foreach ( $asset['css'] as $idx => $cssRel ) {
 				wp_enqueue_style( $this->plugin_name . '-vite-' . $idx, plugins_url( 'admin/build/' . ltrim( $cssRel, '/' ), dirname( __FILE__ ) ), array(), $this->version );
@@ -84,7 +84,7 @@ class Hook_Directory_Admin {
 	public function enqueue_scripts() {
 
 		// Attempt to enqueue Vite-built JS if manifest exists
-		$asset = $this->resolve_manifest_asset( 'admin.js' );
+		$asset = $this->resolve_manifest_asset( 'admin' );
 		if ( $asset && ! empty( $asset['file'] ) ) {
 			wp_enqueue_script( $this->plugin_name . '-vite', plugins_url( 'admin/build/' . ltrim( $asset['file'], '/' ), dirname( __FILE__ ) ), array(), $this->version, true );
 			wp_localize_script( $this->plugin_name . '-vite', 'HookExplorer', array(
@@ -107,21 +107,40 @@ class Hook_Directory_Admin {
 	 * Resolve a Vite manifest asset by input name.
 	 */
 	private function resolve_manifest_asset( $input ) {
-		$manifestPath = plugin_dir_path( dirname( __FILE__ ) ) . 'admin/build/manifest.json';
-		if ( ! file_exists( $manifestPath ) ) {
-			return null;
+		$basePath = plugin_dir_path( dirname( __FILE__ ) ) . 'admin/build/';
+		$paths = array(
+			$basePath . 'manifest.json',
+			$basePath . '.vite/manifest.json',
+		);
+		$manifest = null;
+		foreach ( $paths as $manifestPath ) {
+			if ( file_exists( $manifestPath ) ) {
+				$contents = file_get_contents( $manifestPath );
+				if ( $contents !== false ) {
+					$decoded = json_decode( $contents, true );
+					if ( is_array( $decoded ) ) {
+						$manifest = $decoded;
+						break;
+					}
+				}
+			}
 		}
-		$contents = file_get_contents( $manifestPath );
-		if ( $contents === false ) {
-			return null;
-		}
-		$manifest = json_decode( $contents, true );
 		if ( ! is_array( $manifest ) ) {
 			return null;
 		}
+		// Try to match by key ending with admin.tsx or admin.ts
 		foreach ( $manifest as $key => $data ) {
-			if ( isset( $data['file'] ) && str_ends_with( (string)$key, $input ) ) {
+			if ( isset( $data['file'] ) && ( str_ends_with( (string)$key, 'admin.tsx' ) || str_ends_with( (string)$key, 'admin.ts' ) ) ) {
 				return $data;
+			}
+		}
+		// Fallback: find entry whose built file basename is admin.js
+		foreach ( $manifest as $key => $data ) {
+			if ( isset( $data['file'] ) ) {
+				$basename = basename( (string) $data['file'] );
+				if ( $basename === 'admin.js' ) {
+					return $data;
+				}
 			}
 		}
 		return null;
