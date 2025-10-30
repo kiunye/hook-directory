@@ -14,8 +14,8 @@ class Hook_Directory_REST {
 			'permission_callback' => array( $this, 'can_view' ),
 			'args'                => array(
 				'q'        => array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ),
-				'type'     => array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ),
-				'source'   => array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' ),
+				'type'     => array( 'type' => 'string', 'sanitize_callback' => 'sanitize_key' ),
+				'source'   => array( 'type' => 'string', 'sanitize_callback' => 'sanitize_key' ),
 				'page'     => array( 'type' => 'integer', 'default' => 1 ),
 				'per_page' => array( 'type' => 'integer', 'default' => 50 ),
 			),
@@ -46,11 +46,12 @@ class Hook_Directory_REST {
 	public function list_hooks( WP_REST_Request $request ): WP_REST_Response {
 		global $wpdb;
 		$table = $wpdb->prefix . 'hook_explorer_cache';
+		// --- Harden inputs ---
 		$q = trim( (string) $request->get_param( 'q' ) );
-		$type = trim( (string) $request->get_param( 'type' ) );
-		$source = trim( (string) $request->get_param( 'source' ) );
-		$page = max( 1, (int) $request->get_param( 'page' ) );
-		$per = min( 200, max( 1, (int) $request->get_param( 'per_page' ) ) );
+		$type = sanitize_key( $request->get_param( 'type' ) ?? '' );
+		$source = sanitize_key( $request->get_param( 'source' ) ?? '' );
+		$page = max( 1, absint( $request->get_param( 'page' ) ) );
+		$per = min( 200, max( 1, absint( $request->get_param( 'per_page' ) ) ) );
 		$offset = ( $page - 1 ) * $per;
 
 		$where = array();
@@ -72,6 +73,13 @@ class Hook_Directory_REST {
 		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} {$whereSql}", $params ) );
 		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} {$whereSql} ORDER BY hook_name ASC LIMIT %d OFFSET %d", array_merge( $params, array( $per, $offset ) ) ), ARRAY_A );
 
+		// --- Escape output for frontend use. ---
+		foreach ( $rows as &$row ) {
+			foreach ( $row as $key => $val ) {
+				$row[ $key ] = is_string( $val ) ? esc_html( $val ) : $val;
+			}
+		}
+
 		return new WP_REST_Response( array(
 			'total'   => $total,
 			'page'    => $page,
@@ -83,7 +91,7 @@ class Hook_Directory_REST {
 	public function scan( WP_REST_Request $request ): WP_REST_Response {
 		$scanner = new Hook_Directory_Discovery_Static();
 		$count = $scanner->scan();
-		return new WP_REST_Response( array( 'scanned' => $count ), 200 );
+		return new WP_REST_Response( array( 'scanned' => (int)$count ), 200 );
 	}
 
 	public function stats( WP_REST_Request $request ): WP_REST_Response {
@@ -96,11 +104,11 @@ class Hook_Directory_REST {
 		);
 		$by_type = $wpdb->get_results( "SELECT hook_type, COUNT(*) c FROM {$table} GROUP BY hook_type", ARRAY_A );
 		foreach ( $by_type as $row ) {
-			$totals['by_type'][ $row['hook_type'] ] = (int) $row['c'];
+			$totals['by_type'][ esc_html( $row['hook_type'] ) ] = (int) $row['c'];
 		}
 		$by_source = $wpdb->get_results( "SELECT source_type, COUNT(*) c FROM {$table} GROUP BY source_type", ARRAY_A );
 		foreach ( $by_source as $row ) {
-			$totals['by_source'][ $row['source_type'] ] = (int) $row['c'];
+			$totals['by_source'][ esc_html( $row['source_type'] ) ] = (int) $row['c'];
 		}
 		$totals['last_scan'] = (int) get_option( 'hook_explorer_last_scan', 0 );
 		return new WP_REST_Response( $totals, 200 );
