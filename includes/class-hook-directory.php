@@ -128,6 +128,11 @@ class Hook_Directory {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-hook-directory-settings.php';
 
+		/**
+		 * Static discovery service.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-hook-directory-discovery-static.php';
+
 		$this->loader = new Hook_Directory_Loader();
 
 	}
@@ -191,6 +196,12 @@ class Hook_Directory {
 	 */
 	public function run() {
 		$this->loader->run();
+
+		// Expose a custom action to trigger static scan programmatically.
+		add_action( 'hook_explorer_scan_static', function () {
+			$scanner = new Hook_Directory_Discovery_Static();
+			$scanner->scan();
+		} );
 	}
 
 	/**
