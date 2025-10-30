@@ -66,7 +66,7 @@ class Hook_Directory_Admin {
 		$asset = $this->resolve_manifest_asset( 'admin' );
 		if ( $asset && ! empty( $asset['css'] ) && is_array( $asset['css'] ) ) {
 			foreach ( $asset['css'] as $idx => $cssRel ) {
-				wp_enqueue_style( $this->plugin_name . '-vite-' . $idx, plugins_url( 'admin/build/' . ltrim( $cssRel, '/' ), dirname( __FILE__ ) ), array(), $this->version );
+				wp_enqueue_style( $this->plugin_name . '-vite-' . $idx, plugins_url( 'build/' . ltrim( $cssRel, '/' ), __FILE__ ), array(), $this->version );
 			}
 			return;
 		}
@@ -86,7 +86,7 @@ class Hook_Directory_Admin {
 		// Attempt to enqueue Vite-built JS if manifest exists
 		$asset = $this->resolve_manifest_asset( 'admin' );
 		if ( $asset && ! empty( $asset['file'] ) ) {
-			wp_enqueue_script( $this->plugin_name . '-vite', plugins_url( 'admin/build/' . ltrim( $asset['file'], '/' ), dirname( __FILE__ ) ), array(), $this->version, true );
+			wp_enqueue_script( $this->plugin_name . '-vite', plugins_url( 'build/' . ltrim( $asset['file'], '/' ), __FILE__ ), array(), $this->version, true );
 			wp_localize_script( $this->plugin_name . '-vite', 'HookExplorer', array(
 				'restUrl' => esc_url_raw( get_rest_url( null, '/hook-explorer/v1' ) ),
 				'nonce'   => wp_create_nonce( 'wp_rest' ),
