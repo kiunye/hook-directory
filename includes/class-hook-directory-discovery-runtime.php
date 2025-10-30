@@ -8,6 +8,7 @@ class Hook_Directory_Discovery_Runtime {
 
 	private bool $enabled = false;
 	private int $sampleEvery = 0; // 0 = every request
+	private bool $inHandler = false; // reentrancy guard
 
 	public function __construct() {
 		$settings = get_option( 'hook_explorer_settings', array() );
@@ -31,20 +32,29 @@ class Hook_Directory_Discovery_Runtime {
  	 * @param string $hook_name
  	 */
 	public function on_all( string $hook_name ): void {
+		// Prevent recursion and skip extremely chatty/internal hooks
+		if ( $this->inHandler || $hook_name === 'all' || $hook_name === 'query' ) {
+			return;
+		}
 		if ( ! $this->should_sample() ) {
 			return;
 		}
 
-		list( $file, $line ) = $this->find_first_non_wp_frame();
+		$this->inHandler = true;
+		try {
+			list( $file, $line ) = $this->find_first_non_wp_frame();
 
-		$this->insert_event( array(
-			'hook_name'   => $hook_name,
-			'hook_type'   => $this->infer_type( $hook_name ),
-			'file_path'   => $file,
-			'line'        => $line,
-			'source_type' => $this->infer_source_type( $file ),
-			'source_name' => $this->infer_source_name( $file ),
-		) );
+			$this->insert_event( array(
+				'hook_name'   => $hook_name,
+				'hook_type'   => $this->infer_type( $hook_name ),
+				'file_path'   => $file,
+				'line'        => $line,
+				'source_type' => $this->infer_source_type( $file ),
+				'source_name' => $this->infer_source_name( $file ),
+			) );
+		} finally {
+			$this->inHandler = false;
+		}
 	}
 
 	private function should_sample(): bool {
@@ -59,7 +69,7 @@ class Hook_Directory_Discovery_Runtime {
 	}
 
 	private function find_first_non_wp_frame(): array {
-		$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 25 );
+		$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 10 );
 		$base = wp_normalize_path( ABSPATH );
 		$plugin_php = wp_normalize_path( ABSPATH . 'wp-includes/plugin.php' );
 		foreach ( $trace as $frame ) {
