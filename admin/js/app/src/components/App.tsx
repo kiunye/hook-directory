@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ListView } from './ListView';
 
 const TABS = [
   { id: 'list', label: 'List' },
@@ -32,12 +33,7 @@ export const App: React.FC = () => {
           </button>
         ))}
       </nav>
-      {tab === 'list' && (
-        <div>
-          <h2>List</h2>
-          <p>Tab for displaying hook list (coming next).</p>
-        </div>
-      )}
+      {tab === 'list' && <ListView />}
       {tab !== 'list' && <em style={{ color: '#555' }}>Tab coming soon…</em>}
     </div>
   );
