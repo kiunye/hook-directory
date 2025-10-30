@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 /**
  * Fired during plugin activation
@@ -29,8 +30,55 @@ class Hook_Directory_Activator {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function activate() {
+    public static function activate(): void {
 
-	}
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'hook_explorer_cache';
+		$charset_collate = $wpdb->get_charset_collate();
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$sql = "CREATE TABLE {$table_name} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			hook_name varchar(191) NOT NULL,
+			hook_type varchar(20) NOT NULL,
+			file_path varchar(255) DEFAULT NULL,
+			line int(11) DEFAULT NULL,
+			source_type varchar(20) DEFAULT NULL,
+			source_name varchar(191) DEFAULT NULL,
+			detection_method varchar(20) DEFAULT NULL,
+			first_seen datetime DEFAULT NULL,
+			last_seen datetime DEFAULT NULL,
+			meta longtext DEFAULT NULL,
+			PRIMARY KEY  (id),
+			KEY hook_name (hook_name),
+			KEY source_type (source_type),
+			KEY hook_source (hook_name, source_type)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+
+		$default_settings = array(
+			'scan_core'         => true,
+			'scan_plugins'      => true,
+			'scan_themes'       => true,
+			'runtime_capture'   => false,
+			'capture_sample'    => 0,
+			'cache_expiry_days' => 7,
+		);
+
+		if ( get_option( 'hook_explorer_settings', null ) === null ) {
+			add_option( 'hook_explorer_settings', $default_settings, '', false );
+		}
+
+		if ( get_option( 'hook_explorer_last_scan', null ) === null ) {
+			add_option( 'hook_explorer_last_scan', 0, '', false );
+		}
+
+		if ( get_option( 'hook_explorer_db_version', null ) === null ) {
+			add_option( 'hook_explorer_db_version', '1', '', false );
+		}
+
+    }
 
 }
