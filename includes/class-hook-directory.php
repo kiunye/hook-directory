@@ -133,6 +133,11 @@ class Hook_Directory {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-hook-directory-discovery-static.php';
 
+		/**
+		 * Runtime discovery service.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-hook-directory-discovery-runtime.php';
+
 		$this->loader = new Hook_Directory_Loader();
 
 	}
@@ -201,6 +206,12 @@ class Hook_Directory {
 		add_action( 'hook_explorer_scan_static', function () {
 			$scanner = new Hook_Directory_Discovery_Static();
 			$scanner->scan();
+		} );
+
+		// Start runtime discovery if enabled in settings
+		add_action( 'plugins_loaded', function () {
+			$runtime = new Hook_Directory_Discovery_Runtime();
+			$runtime->start();
 		} );
 	}
 
