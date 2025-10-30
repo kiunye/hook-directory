@@ -131,6 +131,7 @@ class Hook_Directory_Settings {
 				submit_button();
 				?>
 			</form>
+			<div id="hook-explorer-root"></div>
 		</div>
 		<?php
 	}
