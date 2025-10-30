@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 /**
  * The admin-specific functionality of the plugin.
@@ -61,18 +62,16 @@ class Hook_Directory_Admin {
 	 */
 	public function enqueue_styles() {
 
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Hook_Directory_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Hook_Directory_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
+		// Attempt to enqueue Vite-built CSS if manifest exists
+		$asset = $this->resolve_manifest_asset( 'admin.js' );
+		if ( $asset && ! empty( $asset['css'] ) && is_array( $asset['css'] ) ) {
+			foreach ( $asset['css'] as $idx => $cssRel ) {
+				wp_enqueue_style( $this->plugin_name . '-vite-' . $idx, plugins_url( 'admin/build/' . ltrim( $cssRel, '/' ), dirname( __FILE__ ) ), array(), $this->version );
+			}
+			return;
+		}
 
+		// Fallback stylesheet
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/hook-directory-admin.css', array(), $this->version, 'all' );
 
 	}
@@ -84,20 +83,47 @@ class Hook_Directory_Admin {
 	 */
 	public function enqueue_scripts() {
 
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Hook_Directory_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Hook_Directory_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
+		// Attempt to enqueue Vite-built JS if manifest exists
+		$asset = $this->resolve_manifest_asset( 'admin.js' );
+		if ( $asset && ! empty( $asset['file'] ) ) {
+			wp_enqueue_script( $this->plugin_name . '-vite', plugins_url( 'admin/build/' . ltrim( $asset['file'], '/' ), dirname( __FILE__ ) ), array(), $this->version, true );
+			wp_localize_script( $this->plugin_name . '-vite', 'HookExplorer', array(
+				'restUrl' => esc_url_raw( get_rest_url( null, '/hook-explorer/v1' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+			) );
+			return;
+		}
 
+		// Fallback script
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/hook-directory-admin.js', array( 'jquery' ), $this->version, false );
+		wp_localize_script( $this->plugin_name, 'HookExplorer', array(
+			'restUrl' => esc_url_raw( get_rest_url( null, '/hook-explorer/v1' ) ),
+			'nonce'   => wp_create_nonce( 'wp_rest' ),
+		) );
 
 	}
 
+	/**
+	 * Resolve a Vite manifest asset by input name.
+	 */
+	private function resolve_manifest_asset( $input ) {
+		$manifestPath = plugin_dir_path( dirname( __FILE__ ) ) . 'admin/build/manifest.json';
+		if ( ! file_exists( $manifestPath ) ) {
+			return null;
+		}
+		$contents = file_get_contents( $manifestPath );
+		if ( $contents === false ) {
+			return null;
+		}
+		$manifest = json_decode( $contents, true );
+		if ( ! is_array( $manifest ) ) {
+			return null;
+		}
+		foreach ( $manifest as $key => $data ) {
+			if ( isset( $data['file'] ) && str_ends_with( (string)$key, $input ) ) {
+				return $data;
+			}
+		}
+		return null;
+	}
 }
