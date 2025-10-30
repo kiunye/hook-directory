@@ -148,6 +148,11 @@ class Hook_Directory {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-hook-directory-rest.php';
 
+		/**
+		 * Docs builder.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-hook-directory-docs.php';
+
 		$this->loader = new Hook_Directory_Loader();
 
 	}

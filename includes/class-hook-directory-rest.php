@@ -33,6 +33,12 @@ class Hook_Directory_REST {
 			'permission_callback' => array( $this, 'can_view' ),
 			'callback'            => array( $this, 'stats' ),
 		) );
+
+		register_rest_route( self::NAMESPACE, '/docs', array(
+			'methods'             => WP_REST_Server::READABLE,
+			'permission_callback' => array( $this, 'can_view' ),
+			'callback'            => array( $this, 'docs' ),
+		) );
 	}
 
 	public function can_view(): bool {
@@ -112,6 +118,12 @@ class Hook_Directory_REST {
 		}
 		$totals['last_scan'] = (int) get_option( 'hook_explorer_last_scan', 0 );
 		return new WP_REST_Response( $totals, 200 );
+	}
+
+	public function docs( WP_REST_Request $request ) {
+		$builder = new Hook_Directory_Docs();
+		$md = $builder->build_markdown();
+		return new WP_REST_Response( $md, 200, array( 'Content-Type' => 'text/markdown; charset=UTF-8' ) );
 	}
 }
 
