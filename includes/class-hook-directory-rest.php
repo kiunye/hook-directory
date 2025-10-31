@@ -45,6 +45,12 @@ class Hook_Directory_REST {
 			'permission_callback' => array( $this, 'can_manage' ),
 			'callback'            => array( $this, 'debug' ),
 		) );
+
+		register_rest_route( self::NAMESPACE, '/create-table', array(
+			'methods'             => WP_REST_Server::CREATABLE,
+			'permission_callback' => array( $this, 'can_manage' ),
+			'callback'            => array( $this, 'create_table' ),
+		) );
 	}
 
 	public function can_view(): bool {
@@ -151,6 +157,18 @@ class Hook_Directory_REST {
 			'static_rows' => $static_count,
 			'last_error' => $wpdb->last_error ?: null,
 		), 200 );
+	}
+
+	public function create_table( WP_REST_Request $request ): WP_REST_Response {
+		Hook_Directory_Activator::activate();
+		global $wpdb;
+		$table = $wpdb->prefix . 'hook_explorer_cache';
+		$table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table ) ) === $table;
+		return new WP_REST_Response( array(
+			'success' => $table_exists,
+			'table_name' => $table,
+			'error' => $wpdb->last_error ?: null,
+		), $table_exists ? 200 : 500 );
 	}
 }
 
