@@ -33,9 +33,14 @@ class Hook_Directory_Cache {
 			return $count;
 		}
 
-		// For large sets, queue in chunks and schedule processing.
-		$this->queue_entries( $entries, 500 );
-		$this->schedule_processing();
+		// For large sets, process first chunk immediately, queue rest for background.
+		$firstChunk = array_slice( $entries, 0, 500 );
+		$remaining = array_slice( $entries, 500 );
+		$this->insert_batch( $firstChunk );
+		if ( ! empty( $remaining ) ) {
+			$this->queue_entries( $remaining, 500 );
+			$this->schedule_processing();
+		}
 		return $count;
 	}
 
