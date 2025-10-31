@@ -161,19 +161,40 @@ class Hook_Directory_REST {
 
 	public function create_table( WP_REST_Request $request ): WP_REST_Response {
 		try {
+			// Ensure activator class is loaded
+			if ( ! class_exists( 'Hook_Directory_Activator' ) ) {
+				require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-hook-directory-activator.php';
+			}
+			
 			Hook_Directory_Activator::activate();
 			global $wpdb;
 			$table = $wpdb->prefix . 'hook_explorer_cache';
 			$table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table ) ) === $table;
+			
+			// Check for errors
+			$last_error = $wpdb->last_error;
+			if ( ! empty( $last_error ) ) {
+				error_log( 'Hook Explorer create-table: ' . $last_error );
+			}
+			
 			return new WP_REST_Response( array(
 				'success' => $table_exists,
 				'table_name' => $table,
-				'error' => $wpdb->last_error ?: null,
+				'error' => $last_error ?: null,
 			), $table_exists ? 200 : 500 );
 		} catch ( \Exception $e ) {
+			error_log( 'Hook Explorer create-table exception: ' . $e->getMessage() );
 			return new WP_REST_Response( array(
 				'success' => false,
 				'error' => $e->getMessage(),
+				'trace' => $e->getTraceAsString(),
+			), 500 );
+		} catch ( \Error $e ) {
+			error_log( 'Hook Explorer create-table fatal: ' . $e->getMessage() );
+			return new WP_REST_Response( array(
+				'success' => false,
+				'error' => $e->getMessage(),
+				'trace' => $e->getTraceAsString(),
 			), 500 );
 		}
 	}
