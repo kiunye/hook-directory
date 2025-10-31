@@ -76,8 +76,14 @@ class Hook_Directory_REST {
 		}
 		$whereSql = $where ? ( 'WHERE ' . implode( ' AND ', $where ) ) : '';
 
-		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} {$whereSql}", $params ) );
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} {$whereSql} ORDER BY hook_name ASC LIMIT %d OFFSET %d", array_merge( $params, array( $per, $offset ) ) ), ARRAY_A );
+		if ( empty( $params ) ) {
+			// No filters - use direct query
+			$total = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" );
+			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} ORDER BY hook_name ASC LIMIT %d OFFSET %d", array( $per, $offset ) ), ARRAY_A );
+		} else {
+			$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} {$whereSql}", $params ) );
+			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} {$whereSql} ORDER BY hook_name ASC LIMIT %d OFFSET %d", array_merge( $params, array( $per, $offset ) ) ), ARRAY_A );
+		}
 
 		// --- Escape output for frontend use. ---
 		foreach ( $rows as &$row ) {
