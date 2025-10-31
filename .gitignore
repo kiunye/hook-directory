@@ -1,1 +1,5 @@
 .cursor/*
+admin/js/app/node_modules/*
+admin/build/.vite/
+admin/build/assets/
+admin/js/app/package-lock.json
