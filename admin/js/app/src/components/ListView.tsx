@@ -80,7 +80,16 @@ export const ListView: React.FC = () => {
       });
       const json = await res.json();
       console.log('Scan result:', json);
-      await fetchList();
+      // Reset search and page, then refresh
+      setQ('');
+      setPage(1);
+      // Force refresh by directly fetching
+      const url = new URL(restBase + '/hooks');
+      url.searchParams.set('page', '1');
+      url.searchParams.set('per_page', String(perPage));
+      const listRes = await fetch(url.toString(), { headers: { 'X-WP-Nonce': nonce } });
+      const listJson = await listRes.json();
+      setData(listJson);
     } catch (e) {
       console.error('Scan error:', e);
     } finally {
