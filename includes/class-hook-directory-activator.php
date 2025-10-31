@@ -45,27 +45,29 @@ class Hook_Directory_Activator {
 		}
 
 		// Use direct CREATE TABLE query for better compatibility
-		$sql = "CREATE TABLE {$table_name} (
-			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-			hook_name varchar(191) NOT NULL,
-			hook_type varchar(20) NOT NULL,
-			file_path varchar(255) DEFAULT NULL,
-			line int(11) DEFAULT NULL,
-			source_type varchar(20) DEFAULT NULL,
-			source_name varchar(191) DEFAULT NULL,
-			detection_method varchar(20) DEFAULT NULL,
-			first_seen datetime DEFAULT NULL,
-			last_seen datetime DEFAULT NULL,
-			meta longtext DEFAULT NULL,
-			PRIMARY KEY  (id),
-			KEY hook_name (hook_name),
-			KEY source_type (source_type),
-			KEY hook_source (hook_name, source_type)
+		$sql = "CREATE TABLE IF NOT EXISTS `{$table_name}` (
+			`id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			`hook_name` varchar(191) NOT NULL,
+			`hook_type` varchar(20) NOT NULL,
+			`file_path` varchar(255) DEFAULT NULL,
+			`line` int(11) DEFAULT NULL,
+			`source_type` varchar(20) DEFAULT NULL,
+			`source_name` varchar(191) DEFAULT NULL,
+			`detection_method` varchar(20) DEFAULT NULL,
+			`first_seen` datetime DEFAULT NULL,
+			`last_seen` datetime DEFAULT NULL,
+			`meta` longtext DEFAULT NULL,
+			PRIMARY KEY (`id`),
+			KEY `hook_name` (`hook_name`),
+			KEY `source_type` (`source_type`),
+			KEY `hook_source` (`hook_name`, `source_type`)
 		) {$charset_collate};";
 
 		$result = $wpdb->query( $sql );
 		if ( $result === false ) {
-			error_log( 'Hook Explorer: Failed to create table: ' . $wpdb->last_error );
+			error_log( 'Hook Explorer: Failed to create table: ' . $wpdb->last_error . ' | SQL: ' . $sql );
+		} else {
+			error_log( 'Hook Explorer: Table created successfully: ' . $table_name );
 		}
 
 		$default_settings = array(
