@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 type HookRow = {
   id?: number;
@@ -30,6 +30,7 @@ export const ListView: React.FC = () => {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(20);
   const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [data, setData] = useState<ApiResponse | null>(null);
   const debouncedQ = useDebounced(q, 250);
 
@@ -44,26 +45,48 @@ export const ListView: React.FC = () => {
     return url.toString();
   }, [restBase, debouncedQ, page, perPage]);
 
+  const fetchList = useCallback(async () => {
+    if (!restBase) return;
+    setLoading(true);
+    try {
+      const res = await fetch(listUrl, { headers: { 'X-WP-Nonce': nonce } });
+      const json = await res.json();
+      setData(json);
+    } catch (e) {
+      setData({ total: 0, page: 1, perPage, items: [] });
+    } finally {
+      setLoading(false);
+    }
+  }, [listUrl, nonce, restBase, perPage]);
+
   useEffect(() => {
     let aborted = false;
     async function run() {
-      if (!restBase) return;
-      setLoading(true);
-      try {
-        const res = await fetch(listUrl, { headers: { 'X-WP-Nonce': nonce } });
-        const json = await res.json();
-        if (!aborted) setData(json);
-      } catch (e) {
-        if (!aborted) setData({ total: 0, page: 1, perPage, items: [] });
-      } finally {
-        if (!aborted) setLoading(false);
-      }
+      await fetchList();
     }
     run();
     return () => {
       aborted = true;
     };
-  }, [listUrl, nonce, restBase, perPage]);
+  }, [fetchList]);
+
+  const handleScan = async () => {
+    if (!restBase || scanning) return;
+    setScanning(true);
+    try {
+      const res = await fetch(restBase + '/scan', {
+        method: 'POST',
+        headers: { 'X-WP-Nonce': nonce }
+      });
+      const json = await res.json();
+      console.log('Scan result:', json);
+      await fetchList();
+    } catch (e) {
+      console.error('Scan error:', e);
+    } finally {
+      setScanning(false);
+    }
+  };
 
   const total = data?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / (data?.perPage || perPage)));
@@ -72,7 +95,7 @@ export const ListView: React.FC = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
         <input
           type="search"
           placeholder="Search hooks…"
@@ -91,8 +114,23 @@ export const ListView: React.FC = () => {
             ))}
           </select>
         </label>
+        <button
+          onClick={handleScan}
+          disabled={scanning || loading}
+          style={{
+            padding: '8px 16px',
+            background: scanning ? '#888' : '#2271b1',
+            color: '#fff',
+            border: 0,
+            borderRadius: 3,
+            cursor: scanning || loading ? 'not-allowed' : 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          {scanning ? 'Scanning…' : 'Scan Now'}
+        </button>
         {loading && <span style={{ color: '#555' }}>Loading…</span>}
-        {!loading && <span style={{ color: '#555' }}>{total.toLocaleString()} results</span>}
+        {!loading && !scanning && <span style={{ color: '#555' }}>{total.toLocaleString()} results</span>}
       </div>
 
       <div style={{ overflowX: 'auto' }}>
@@ -154,7 +192,9 @@ export const ListView: React.FC = () => {
             })}
             {(!data || (data.items ?? []).length === 0) && !loading && (
               <tr>
-                <td colSpan={4} style={{ padding: 16, color: '#777' }}>No hooks found.</td>
+                <td colSpan={5} style={{ padding: 16, color: '#777', textAlign: 'center' }}>
+                  No hooks found.{total === 0 && ' Click "Scan Now" to discover hooks.'}
+                </td>
               </tr>
             )}
           </tbody>
