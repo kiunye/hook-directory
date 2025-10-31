@@ -39,6 +39,12 @@ class Hook_Directory_REST {
 			'permission_callback' => array( $this, 'can_view' ),
 			'callback'            => array( $this, 'docs' ),
 		) );
+
+		register_rest_route( self::NAMESPACE, '/debug', array(
+			'methods'             => WP_REST_Server::READABLE,
+			'permission_callback' => array( $this, 'can_manage' ),
+			'callback'            => array( $this, 'debug' ),
+		) );
 	}
 
 	public function can_view(): bool {
@@ -130,6 +136,21 @@ class Hook_Directory_REST {
 		$builder = new Hook_Directory_Docs();
 		$md = $builder->build_markdown();
 		return new WP_REST_Response( $md, 200, array( 'Content-Type' => 'text/markdown; charset=UTF-8' ) );
+	}
+
+	public function debug( WP_REST_Request $request ): WP_REST_Response {
+		global $wpdb;
+		$table = $wpdb->prefix . 'hook_explorer_cache';
+		$table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table ) ) === $table;
+		$count = $table_exists ? (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table}" ) : 0;
+		$static_count = $table_exists ? (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE detection_method = %s", 'static' ) ) : 0;
+		return new WP_REST_Response( array(
+			'table_exists' => $table_exists,
+			'table_name' => $table,
+			'total_rows' => $count,
+			'static_rows' => $static_count,
+			'last_error' => $wpdb->last_error ?: null,
+		), 200 );
 	}
 }
 
