@@ -160,15 +160,22 @@ class Hook_Directory_REST {
 	}
 
 	public function create_table( WP_REST_Request $request ): WP_REST_Response {
-		Hook_Directory_Activator::activate();
-		global $wpdb;
-		$table = $wpdb->prefix . 'hook_explorer_cache';
-		$table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table ) ) === $table;
-		return new WP_REST_Response( array(
-			'success' => $table_exists,
-			'table_name' => $table,
-			'error' => $wpdb->last_error ?: null,
-		), $table_exists ? 200 : 500 );
+		try {
+			Hook_Directory_Activator::activate();
+			global $wpdb;
+			$table = $wpdb->prefix . 'hook_explorer_cache';
+			$table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table ) ) === $table;
+			return new WP_REST_Response( array(
+				'success' => $table_exists,
+				'table_name' => $table,
+				'error' => $wpdb->last_error ?: null,
+			), $table_exists ? 200 : 500 );
+		} catch ( \Exception $e ) {
+			return new WP_REST_Response( array(
+				'success' => false,
+				'error' => $e->getMessage(),
+			), 500 );
+		}
 	}
 }
 

@@ -38,6 +38,13 @@ class Hook_Directory_Activator {
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
+		// Check if table already exists
+		$table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_name ) ) === $table_name;
+		if ( $table_exists ) {
+			return; // Table already exists
+		}
+
+		// Use direct CREATE TABLE query for better compatibility
 		$sql = "CREATE TABLE {$table_name} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			hook_name varchar(191) NOT NULL,
@@ -56,7 +63,10 @@ class Hook_Directory_Activator {
 			KEY hook_source (hook_name, source_type)
 		) {$charset_collate};";
 
-		dbDelta( $sql );
+		$result = $wpdb->query( $sql );
+		if ( $result === false ) {
+			error_log( 'Hook Explorer: Failed to create table: ' . $wpdb->last_error );
+		}
 
 		$default_settings = array(
 			'scan_core'         => true,
