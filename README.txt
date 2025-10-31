@@ -1,21 +1,38 @@
-=== Plugin Name ===
-Contributors: (this should be a list of wordpress.org userid's)
+=== Hook Explorer ===
+Contributors: kiunye
 Donate link: https://kiunyearaya.dev/
-Tags: comments, spam
-Requires at least: 3.0.1
-Tested up to: 3.4
-Stable tag: 4.3
+Tags: hooks, actions, filters, development, debugging, documentation
+Requires at least: 6.0
+Requires PHP: 8.1
+Tested up to: 6.8
+Stable tag: 0.1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Here is a short description of the plugin.  This should be no more than 150 characters.  No markup here.
+Discover and explore WordPress hooks (actions and filters) across core, plugins, and themes with static and runtime discovery.
 
 == Description ==
 
-This is the long description.  No limit, and you can use Markdown (as well as in the following sections).
+Hook Explorer is a powerful WordPress development tool that helps you discover, document, and understand WordPress hooks throughout your site. It scans your WordPress installation to find all `do_action()` and `apply_filters()` calls, making it easier to understand hook dependencies and create proper integrations.
 
-For backwards compatibility, if this section is missing, the full length of the short description will be used, and
-Markdown parsed.
+**Key Features:**
+
+* **Static Discovery**: Scans PHP files to find hooks defined in WordPress core, active plugins, and themes
+* **Runtime Capture**: Optionally captures hooks as they fire during page requests (with sampling for performance)
+* **Interactive UI**: Modern React-based admin interface with search, filtering, and pagination
+* **Documentation Export**: Generate markdown documentation of all discovered hooks
+* **REST API**: Full REST API for programmatic access to hook data
+* **Background Processing**: Efficiently handles large-scale scans with background queue processing
+
+**Use Cases:**
+
+* Understand which hooks are available in your WordPress installation
+* Discover plugin and theme hook dependencies
+* Document your custom hooks for team members
+* Debug hook execution order and timing
+* Plan integrations and customizations
+
+The plugin creates a comprehensive database of hooks with details about their source (core/plugin/theme), file location, line numbers, and hook types (action vs filter).
 
 A few notes about the sections above:
 
@@ -39,23 +56,44 @@ you put the stable version, in order to eliminate any doubt.
 
 == Installation ==
 
-This section describes how to install the plugin and get it working.
+1. Upload the `hook-directory` folder to the `/wp-content/plugins/` directory
+2. Activate the plugin through the 'Plugins' menu in WordPress
+3. Navigate to **Settings > Hook Explorer** to configure scan options
+4. Click **"Scan Now"** in the List tab to discover hooks on your site
 
-e.g.
+**First-time Setup:**
 
-1. Upload `hook-directory.php` to the `/wp-content/plugins/` directory
-1. Activate the plugin through the 'Plugins' menu in WordPress
-1. Place `<?php do_action('plugin_name_hook'); ?>` in your templates
+After activation, the plugin will create a database table to store discovered hooks. If the table creation fails during activation, you can manually trigger it via the REST API endpoint `/wp-json/hook-explorer/v1/create-table` (requires admin permissions).
+
+**Building the Admin UI:**
+
+The plugin includes a React-based admin interface. To build the assets:
+
+```bash
+cd admin/js/app
+npm install
+npm run build
+```
+
+The built assets will be automatically loaded by WordPress.
 
 == Frequently Asked Questions ==
 
-= A question that someone might have =
+= How does static discovery work? =
 
-An answer to that question.
+Static discovery scans PHP files using token parsing to find `do_action()`, `do_action_ref_array()`, `apply_filters()`, and `apply_filters_ref_array()` calls. It searches WordPress core, active plugins, and themes based on your settings.
 
-= What about foo bar? =
+= What is runtime capture? =
 
-Answer to foo bar dilemma.
+Runtime capture listens to the `all` hook to record hooks as they fire during page requests. You can enable sampling (e.g., capture every Nth request) to reduce performance impact on production sites.
+
+= Will this slow down my site? =
+
+Static scans run on-demand and are optimized with background processing for large installations. Runtime capture can be disabled or configured with sampling to minimize performance impact. The plugin is designed to be lightweight during normal operation.
+
+= Can I export the hook data? =
+
+Yes! The plugin includes a REST API endpoint (`/wp-json/hook-explorer/v1/docs`) that returns markdown documentation of all discovered hooks. You can also access hook data programmatically via the `/hooks` endpoint.
 
 == Screenshots ==
 
@@ -67,48 +105,16 @@ directory take precedence. For example, `/assets/screenshot-1.png` would win ove
 
 == Changelog ==
 
-= 1.0 =
-* A change since the previous version.
-* Another change.
-
-= 0.5 =
-* List versions from most recent at top to oldest at bottom.
+= 0.1.0 =
+* Initial release
+* Static discovery engine with token-based PHP parsing
+* Runtime hook capture with sampling support
+* React-based admin UI with List tab
+* REST API endpoints for hooks, stats, docs, and scanning
+* Background processing for large-scale scans
+* Documentation generator with markdown export
 
 == Upgrade Notice ==
 
-= 1.0 =
-Upgrade notices describe the reason a user should upgrade.  No more than 300 characters.
-
-= 0.5 =
-This version fixes a security related bug.  Upgrade immediately.
-
-== Arbitrary section ==
-
-You may provide arbitrary sections, in the same format as the ones above.  This may be of use for extremely complicated
-plugins where more information needs to be conveyed that doesn't fit into the categories of "description" or
-"installation."  Arbitrary sections will be shown below the built-in sections outlined above.
-
-== A brief Markdown Example ==
-
-Ordered list:
-
-1. Some feature
-1. Another feature
-1. Something else about the plugin
-
-Unordered list:
-
-* something
-* something else
-* third thing
-
-Here's a link to [WordPress](http://wordpress.org/ "Your favorite software") and one to [Markdown's Syntax Documentation][markdown syntax].
-Titles are optional, naturally.
-
-[markdown syntax]: http://daringfireball.net/projects/markdown/syntax
-            "Markdown is what the parser uses to process much of the readme file"
-
-Markdown uses email style notation for blockquotes and I've been told:
-> Asterisks for *emphasis*. Double it up  for **strong**.
-
-`<?php code(); // goes in backticks ?>`
+= 0.1.0 =
+Initial release of Hook Explorer. Install to start discovering and documenting WordPress hooks across your site.
