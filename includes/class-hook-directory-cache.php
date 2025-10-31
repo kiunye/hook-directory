@@ -19,6 +19,13 @@ class Hook_Directory_Cache {
 		global $wpdb;
 		$table = $wpdb->prefix . 'hook_explorer_cache';
 
+		// Verify table exists
+		$table_exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table ) );
+		if ( $table_exists !== $table ) {
+			error_log( 'Hook Explorer: Table does not exist: ' . $table );
+			return 0;
+		}
+
 		// Clear previous static detections first.
 		$wpdb->query( $wpdb->prepare( "DELETE FROM {$table} WHERE detection_method = %s", 'static' ) );
 
@@ -51,12 +58,14 @@ class Hook_Directory_Cache {
 		global $wpdb;
 		$table = $wpdb->prefix . 'hook_explorer_cache';
 		$now = current_time( 'mysql', true );
+		$inserted = 0;
+		$errors = 0;
 		foreach ( $entries as $e ) {
-			$wpdb->insert(
+			$result = $wpdb->insert(
 				$table,
 				array(
-					'hook_name'        => $e['hook_name'],
-					'hook_type'        => $e['hook_type'],
+					'hook_name'        => $e['hook_name'] ?? '',
+					'hook_type'        => $e['hook_type'] ?? '',
 					'file_path'        => $e['file_path'] ?? null,
 					'line'             => isset( $e['line'] ) ? (int) $e['line'] : null,
 					'source_type'      => $e['source_type'] ?? null,
@@ -67,6 +76,17 @@ class Hook_Directory_Cache {
 				),
 				array( '%s','%s','%s','%d','%s','%s','%s','%s','%s' )
 			);
+			if ( $result === false ) {
+				$errors++;
+				if ( $errors <= 3 ) {
+					error_log( 'Hook Explorer insert failed: ' . $wpdb->last_error . ' | Hook: ' . ( $e['hook_name'] ?? 'unknown' ) );
+				}
+			} else {
+				$inserted++;
+			}
+		}
+		if ( $errors > 0 ) {
+			error_log( "Hook Explorer: Inserted {$inserted}, Failed {$errors} out of " . count( $entries ) );
 		}
 	}
 
