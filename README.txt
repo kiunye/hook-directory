@@ -1,6 +1,6 @@
 === Hook Explorer ===
 Contributors: kiunye
-Donate link: https://kiunyearaya.dev/
+Donate link: 
 Tags: hooks, actions, filters, development, debugging, documentation
 Requires at least: 6.0
 Requires PHP: 8.1
